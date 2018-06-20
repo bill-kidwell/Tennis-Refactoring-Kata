@@ -1,65 +1,87 @@
-var TennisGame1 = function(player1Name, player2Name) {
-    this.m_score1 = 0;
-    this.m_score2 = 0;
-    this.player1Name = player1Name;
-    this.player2Name = player2Name;
+var scores = {
+    0: 'Love',
+    1: 'Fifteen',
+    2: 'Thirty',
+    3: 'Forty'
+}
+
+var Player = function(name) {
+    this.name = name;
+    this.score = 0;
 };
+
+Player.prototype.wonPoint = function() {
+    this.score += 1;
+}
+
+Player.prototype.compare = function(opponent) {
+    return this.score - opponent.score;
+}
+
+// Return the text for the player's score, or the number if there is no name.
+Player.prototype.getScore = function() {
+    return scores[this.score] || this.score;
+}
+
+var TennisGame1 = function(player1Name, player2Name) {
+    if (player1Name === player2Name) {
+        throw new Error("Invalid game. Two distinct players requried.");
+    }
+
+    this.player1 = new Player(player1Name);
+    this.player2 = new Player(player2Name);
+
+    this.players = [ this.player1, this.player2 ];
+};
+
+TennisGame1.prototype.getPlayer = function(playerName) {    
+    return this.players.find(function(d, i) {
+        return d.name === playerName;
+    });
+}
 
 TennisGame1.prototype.wonPoint = function(playerName) {
-    if (playerName === "player1")
-        this.m_score1 += 1;
-    else
-        this.m_score2 += 1;
+    this.getPlayer(playerName).wonPoint();
 };
 
-TennisGame1.prototype.getScore = function() {
-    var score = "";
-    var tempScore = 0;
-    if (this.m_score1 === this.m_score2) {
-        switch (this.m_score1) {
-            case 0:
-                score = "Love-All";
-                break;
-            case 1:
-                score = "Fifteen-All";
-                break;
-            case 2:
-                score = "Thirty-All";
-                break;
-            default:
-                score = "Deuce";
-                break;
-        }
-    } else if (this.m_score1 >= 4 || this.m_score2 >= 4) {
-        var minusResult = this.m_score1 - this.m_score2;
-        if (minusResult === 1) score = "Advantage player1";
-        else if (minusResult === -1) score = "Advantage player2";
-        else if (minusResult >= 2) score = "Win for player1";
-        else score = "Win for player2";
-    } else {
-        for (var i = 1; i < 3; i++) {
-            if (i === 1) tempScore = this.m_score1;
-            else {
-                score += "-";
-                tempScore = this.m_score2;
-            }
-            switch (tempScore) {
-                case 0:
-                    score += "Love";
-                    break;
-                case 1:
-                    score += "Fifteen";
-                    break;
-                case 2:
-                    score += "Thirty";
-                    break;
-                case 3:
-                    score += "Forty";
-                    break;
-            }
-        }
-    }
+const reportTie = function (score) {
+    if (score > 2)
+        return 'Deuce';
+    return scores[score] + '-All';
+}
+
+const max = function (player1, player2) {
+    return player1.score > player2.score 
+        ? player1
+        : player2;
+}
+
+const isTied = function(player1, player2) {
+    return player1.compare(player2) === 0;
+}
+
+const reportAdvantageOrWin = function(player1, player2) {    
+    var score = '';
+    var diff = player1.compare(player2);
+    score = Math.abs(diff) > 1 ? 'Win for ' : 'Advantage ';
+    score += max(player1, player2).name;
     return score;
+}
+
+const score = function (player1, player2) {
+    if (isTied(player1, player2)) {
+        return reportTie(player1.score);
+    } 
+    
+    if (player1.score >= 4 || player2.score >= 4) {
+        return reportAdvantageOrWin(player1, player2);
+    } 
+    
+    return player1.getScore() + '-' + player2.getScore();
+}
+
+TennisGame1.prototype.getScore = function() {
+    return score(this.player1, this.player2)
 };
 
 if (typeof window === "undefined") {
